@@ -159,9 +159,9 @@ loadLibraries(const std::vector<std::string>& library_names, const std::vector<s
     std::optional<boost::dll::shared_library> lib = std::nullopt;
     // First check if the library name is actually a complete, absolute path where the library is located
     {
-      const boost::filesystem::path library_path(library_name);
+      const boost::dll::fs::path library_path(library_name);
 
-      if (boost::filesystem::exists(library_path) && library_path.is_absolute())
+      if (boost::dll::fs::exists(library_path) && library_path.is_absolute())
       {
         auto it = cache.find(library_path.string());
         lib = (it != cache.end()) ? it->second : loadLibrary(library_path);
@@ -186,7 +186,7 @@ loadLibraries(const std::vector<std::string>& library_names, const std::vector<s
     // each local search path and the library name
     for (const std::string& search_path : search_paths_local)
     {
-      const boost::filesystem::path library_path = boost::filesystem::path(search_path) / library_name;
+      const boost::dll::fs::path library_path = boost::dll::fs::path(search_path) / library_name;
 
       auto it = cache.find(library_path.string());
       lib = (it != cache.end()) ? it->second : loadLibrary(library_path);

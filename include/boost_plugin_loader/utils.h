@@ -25,6 +25,7 @@
 #include <optional>
 
 // Boost
+#include <boost/dll/config.hpp>
 #include <boost/dll/shared_library.hpp>
 
 namespace boost_plugin_loader
@@ -43,7 +44,7 @@ public:
  * @param library_directory The library directory, if empty it will enable search system directories
  * @return A shared library
  */
-std::optional<boost::dll::shared_library> loadLibrary(const boost::filesystem::path& library_path);
+std::optional<boost::dll::shared_library> loadLibrary(const boost::dll::fs::path& library_path);
 
 /**
  * @brief Get a list of available symbols under the provided section

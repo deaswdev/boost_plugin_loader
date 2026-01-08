@@ -22,12 +22,6 @@
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/dll/shared_library.hpp>
 #include <boost/dll/shared_library_load_mode.hpp>
-#include <boost/algorithm/string/constants.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/system/error_code.hpp>
 
 // STD
 #include <vector>
@@ -42,7 +36,7 @@
 
 namespace boost_plugin_loader
 {
-std::optional<boost::dll::shared_library> loadLibrary(const boost::filesystem::path& library_path)
+std::optional<boost::dll::shared_library> loadLibrary(const boost::dll::fs::path& library_path)
 {
   boost::dll::load_mode::type mode{ boost::dll::load_mode::type::default_mode };
 
@@ -55,7 +49,7 @@ std::optional<boost::dll::shared_library> loadLibrary(const boost::filesystem::p
     mode = boost::dll::load_mode::append_decorations;
   }
 
-  boost::system::error_code ec;
+  boost::dll::fs::error_code ec;
   boost::dll::shared_library lib = boost::dll::shared_library(library_path, ec, mode);
   if (ec)
     return std::nullopt;
@@ -96,24 +90,37 @@ std::vector<std::string> getAllAvailableSections(const boost::dll::shared_librar
 
 std::string decorate(const std::string& library_name, const std::string& library_directory)
 {
-  boost::filesystem::path lib_path;
+  boost::dll::fs::path lib_path;
   if (library_directory.empty())
-    lib_path = boost::filesystem::path(library_name);
+    lib_path = boost::dll::fs::path(library_name);
   else
-    lib_path = boost::filesystem::path(library_directory) / library_name;
+    lib_path = boost::dll::fs::path(library_directory) / library_name;
 
   // Support when library_name is already full path
   if (lib_path.is_absolute())
     return lib_path.string();
 
-  boost::filesystem::path actual_path =
+  boost::dll::fs::path actual_path =
       (std::strncmp(lib_path.filename().string().c_str(), "lib", 3) != 0 ?
-           boost::filesystem::path((lib_path.has_parent_path() ? lib_path.parent_path() / L"lib" : L"lib").native() +
+           boost::dll::fs::path((lib_path.has_parent_path() ? lib_path.parent_path() / L"lib" : L"lib").native() +
                                    lib_path.filename().native()) :
            lib_path);
 
   actual_path += boost::dll::shared_library::suffix();
   return actual_path.string();
+}
+
+static void splitStr(std::vector<std::string>& elems, const std::string& src, const char delim)
+{
+  std::istringstream iss(src);
+  std::string item;
+  while (std::getline(iss, item, delim))
+  {
+    if (!item.empty())
+    {
+      elems.emplace_back(item);
+    }
+  }
 }
 
 std::vector<std::string> parseEnvironmentVariableList(const std::string& env_variable)
@@ -125,9 +132,9 @@ std::vector<std::string> parseEnvironmentVariableList(const std::string& env_var
   std::string evn_str = std::string(env_var);
   std::vector<std::string> env_list;
 #ifndef _WIN32
-  boost::split(env_list, evn_str, boost::is_any_of(":"), boost::token_compress_on);
+  splitStr(env_list, evn_str, ':');
 #else
-  boost::split(env_list, evn_str, boost::is_any_of(";"), boost::token_compress_on);
+  splitStr(env_list, evn_str, ';');
 #endif
 
   std::vector<std::string> list;
@@ -172,7 +179,7 @@ void addSymbolLibraryToSearchLibrariesEnv(const void* symbol_ptr, const std::str
     env_var_str = env_var;
   }
 
-  const boost::filesystem::path lib_path = boost::filesystem::canonical(boost::dll::symbol_location_ptr(symbol_ptr));
+  const boost::dll::fs::path lib_path = boost::dll::fs::canonical(boost::dll::symbol_location_ptr(symbol_ptr));
 
   if (env_var_str.empty())
   {
